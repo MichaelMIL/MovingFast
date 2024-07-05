@@ -22,7 +22,6 @@ class _QrScannerState extends State<QrScanner> {
   bool isCameraPaused = false;
   bool isVerifyMode = false;
   bool isDeliverMode = false;
-  // Track if a snackbar is currently displayed
   bool isSnackbarVisible = false;
   String? lastScannedCode;
 
@@ -51,28 +50,13 @@ class _QrScannerState extends State<QrScanner> {
 
   @override
   Widget build(BuildContext context) {
-    final itemProvider = Provider.of<ItemProvider>(context, listen: false);
+    // final itemProvider = Provider.of<ItemProvider>(context, listen: false);
 
     return Scaffold(
-      appBar: AppBar(title: Text('QR Scanner')),
+      appBar: AppBar(title: const Text('QR Scanner')),
       body: Column(
         children: <Widget>[
           Expanded(flex: 4, child: _buildQrView(context)),
-          Expanded(
-            flex: 1,
-            child: FittedBox(
-              fit: BoxFit.contain,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[
-                  if (result != null)
-                    _buildScanResult(itemProvider, context)
-                  else
-                    const Text('Scan a code'),
-                ],
-              ),
-            ),
-          )
         ],
       ),
       floatingActionButton: SpeedDial(
@@ -81,7 +65,7 @@ class _QrScannerState extends State<QrScanner> {
         animatedIcon: AnimatedIcons.menu_close,
         children: [
           SpeedDialChild(
-            child: Icon(Icons.flash_on),
+            child: const Icon(Icons.flash_on),
             label: 'Toggle Flash',
             onTap: () async {
               await controller?.toggleFlash();
@@ -89,7 +73,7 @@ class _QrScannerState extends State<QrScanner> {
             },
           ),
           SpeedDialChild(
-            child: Icon(Icons.flip_camera_android),
+            child: const Icon(Icons.flip_camera_android),
             label: 'Rotate Camera',
             onTap: () async {
               await controller?.flipCamera();
@@ -112,7 +96,7 @@ class _QrScannerState extends State<QrScanner> {
           ),
           if (!isVerifyMode)
             SpeedDialChild(
-              child: Icon(Icons.verified),
+              child: const Icon(Icons.verified),
               label: 'Toggle Verify Mode',
               onTap: () {
                 setState(() {
@@ -123,7 +107,7 @@ class _QrScannerState extends State<QrScanner> {
             ),
           if (!isDeliverMode)
             SpeedDialChild(
-              child: Icon(Icons.delivery_dining),
+              child: const Icon(Icons.delivery_dining),
               label: 'Toggle Deliver Mode',
               onTap: () {
                 setState(() {
@@ -133,7 +117,7 @@ class _QrScannerState extends State<QrScanner> {
               },
             ),
           SpeedDialChild(
-            child: Icon(Icons.info),
+            child: const Icon(Icons.info),
             label: 'Get Info',
             onTap: () {
               setState(() {
@@ -190,7 +174,6 @@ class _QrScannerState extends State<QrScanner> {
     if (lastScannedCode == scannedCode && isSnackbarVisible) {
       return;
     } else {
-      // if snackbar is visible, close it
       if (isSnackbarVisible) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         isSnackbarVisible = false;
@@ -226,7 +209,10 @@ class _QrScannerState extends State<QrScanner> {
                   content: Row(
                     children: [
                       Expanded(
-                        child: Text('Item verified for code: $scannedCode'),
+                        child: Text(
+                          'Item verified for code: $scannedCode',
+                          style: const TextStyle(color: Colors.black),
+                        ),
                       ),
                       TextButton(
                         onPressed: () {
@@ -236,7 +222,10 @@ class _QrScannerState extends State<QrScanner> {
                             ),
                           );
                         },
-                        child: Text('View QR'),
+                        child: const Text(
+                          'View QR',
+                          style: TextStyle(color: Colors.black),
+                        ),
                       ),
                     ],
                   ),
@@ -271,7 +260,7 @@ class _QrScannerState extends State<QrScanner> {
                             ),
                           );
                         },
-                        child: Text('View QR'),
+                        child: const Text('View QR'),
                       ),
                     ],
                   ),
@@ -303,7 +292,7 @@ class _QrScannerState extends State<QrScanner> {
                             ),
                           );
                         },
-                        child: Text('View QR'),
+                        child: const Text('View QR'),
                       ),
                     ],
                   ),
@@ -332,31 +321,5 @@ class _QrScannerState extends State<QrScanner> {
   void dispose() {
     controller?.dispose();
     super.dispose();
-  }
-
-  Widget _buildScanResult(ItemProvider itemProvider, BuildContext context) {
-    final scannedCode = result?.code;
-    final item = itemProvider.getItemByUniqueId(scannedCode!);
-
-    if (item == null) {
-      return Text('Item not found: $scannedCode');
-    }
-
-    return Container(
-      color: Colors.green.withOpacity(0.3),
-      child: Column(
-        children: [
-          Text('Item ID: ${item.id}'),
-          if (item.description != null && item.description!.isNotEmpty)
-            Text('Description: ${item.description}'),
-          if (item.room != null && item.room!.isNotEmpty)
-            Text('Room: ${item.room}'),
-          Text('Verified: ${item.isVerified ? 'Yes' : 'No'}'),
-          Text('Archived: ${item.isArchived ? 'Yes' : 'No'}'),
-          Text('Deleted: ${item.isDeleted ? 'Yes' : 'No'}'),
-          Text('Delivered: ${item.isDelivered ? 'Yes' : 'No'}'),
-        ],
-      ),
-    );
   }
 }
