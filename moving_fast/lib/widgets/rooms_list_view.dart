@@ -85,7 +85,7 @@ class RoomsListView extends StatelessWidget {
                     onPressed: () {
                       showDialog(
                         context: context,
-                        builder: (context) => QrCodeScreen(id: item.uniqueId),
+                        builder: (context) => QrCodeScreen(item: item),
                       );
                     },
                   ),

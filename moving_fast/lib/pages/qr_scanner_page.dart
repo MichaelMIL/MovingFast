@@ -1,12 +1,12 @@
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import '../providers/items_provider.dart';
+import 'qr_code_page.dart';
 
 class QrScanner extends StatefulWidget {
   const QrScanner({Key? key}) : super(key: key);
@@ -22,6 +22,20 @@ class _QrScannerState extends State<QrScanner> {
   bool isCameraPaused = false;
   bool isVerifyMode = false;
   bool isDeliverMode = false;
+  // Track if a snackbar is currently displayed
+  bool isSnackbarVisible = false;
+  String? lastScannedCode;
+
+  Color _setQrFrameColor() {
+    Color qrFrameColor = Colors.red;
+    if (isVerifyMode) {
+      qrFrameColor = Colors.yellow;
+    }
+    if (isDeliverMode) {
+      qrFrameColor = Colors.green;
+    }
+    return qrFrameColor;
+  }
 
   @override
   void reassemble() {
@@ -52,7 +66,7 @@ class _QrScannerState extends State<QrScanner> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: <Widget>[
                   if (result != null)
-                    _buildScanResult(itemProvider)
+                    _buildScanResult(itemProvider, context)
                   else
                     const Text('Scan a code'),
                 ],
@@ -142,7 +156,7 @@ class _QrScannerState extends State<QrScanner> {
       key: qrKey,
       onQRViewCreated: _onQRViewCreated,
       overlay: QrScannerOverlayShape(
-          borderColor: Colors.red,
+          borderColor: _setQrFrameColor(),
           borderRadius: 10,
           borderLength: 30,
           borderWidth: 10,
@@ -160,8 +174,149 @@ class _QrScannerState extends State<QrScanner> {
         setState(() {
           result = scanData;
         });
+        _handleScanResult(scanData, context);
       }
     });
+  }
+
+  void _handleScanResult(Barcode scanData, BuildContext context) {
+    final itemProvider = Provider.of<ItemProvider>(context, listen: false);
+    final scannedCode = scanData.code;
+    if (scannedCode == null) {
+      return;
+    }
+    final item = itemProvider.getItemByUniqueId(scannedCode);
+
+    if (lastScannedCode == scannedCode && isSnackbarVisible) {
+      return;
+    } else {
+      // if snackbar is visible, close it
+      if (isSnackbarVisible) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        isSnackbarVisible = false;
+      }
+    }
+    lastScannedCode = scannedCode;
+
+    if (item == null) {
+      if (!isSnackbarVisible) {
+        isSnackbarVisible = true;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
+              SnackBar(
+                content: Text('Item not found: $scannedCode'),
+                backgroundColor: Colors.red,
+              ),
+            )
+            .closed
+            .then((reason) {
+          isSnackbarVisible = false;
+        });
+      }
+    } else {
+      if (isVerifyMode) {
+        if (!isSnackbarVisible) {
+          isSnackbarVisible = true;
+          Future.microtask(() {
+            itemProvider.setItemVerification(scannedCode, true);
+          });
+          ScaffoldMessenger.of(context)
+              .showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Expanded(
+                        child: Text('Item verified for code: $scannedCode'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => QrCodeScreen(item: item),
+                            ),
+                          );
+                        },
+                        child: Text('View QR'),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: Colors.yellow,
+                ),
+              )
+              .closed
+              .then((reason) {
+            isSnackbarVisible = false;
+          });
+        }
+      }
+      if (isDeliverMode) {
+        if (!isSnackbarVisible) {
+          isSnackbarVisible = true;
+          Future.microtask(() {
+            itemProvider.setItemDelivered(scannedCode, true);
+          });
+          ScaffoldMessenger.of(context)
+              .showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Expanded(
+                        child: Text('Item delivered for code: $scannedCode'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => QrCodeScreen(item: item),
+                            ),
+                          );
+                        },
+                        child: Text('View QR'),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: Colors.green,
+                ),
+              )
+              .closed
+              .then((reason) {
+            isSnackbarVisible = false;
+          });
+        }
+      }
+      if (!isVerifyMode && !isDeliverMode) {
+        if (!isSnackbarVisible) {
+          isSnackbarVisible = true;
+          ScaffoldMessenger.of(context)
+              .showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Expanded(
+                        child: Text('Item found for code: $scannedCode'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => QrCodeScreen(item: item),
+                            ),
+                          );
+                        },
+                        child: Text('View QR'),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: Colors.orange,
+                ),
+              )
+              .closed
+              .then((reason) {
+            isSnackbarVisible = false;
+          });
+        }
+      }
+    }
   }
 
   void _onPermissionSet(BuildContext context, QRViewController ctrl, bool p) {
@@ -179,24 +334,12 @@ class _QrScannerState extends State<QrScanner> {
     super.dispose();
   }
 
-  Widget _buildScanResult(ItemProvider itemProvider) {
+  Widget _buildScanResult(ItemProvider itemProvider, BuildContext context) {
     final scannedCode = result?.code;
     final item = itemProvider.getItemByUniqueId(scannedCode!);
 
     if (item == null) {
       return Text('Item not found: $scannedCode');
-    }
-
-    if (isVerifyMode && !item.isVerified) {
-      Future.microtask(() {
-        itemProvider.setItemVerification(scannedCode, true);
-      });
-    }
-
-    if (isDeliverMode && !item.isDelivered) {
-      Future.microtask(() {
-        itemProvider.setItemDelivered(scannedCode, true);
-      });
     }
 
     return Container(

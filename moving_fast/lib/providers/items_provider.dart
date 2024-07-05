@@ -52,10 +52,26 @@ class ItemProvider with ChangeNotifier {
   final _uuid = Uuid();
 
   ItemProvider() {
+    _createDemoItems();
     _loadItems();
   }
 
   List<Item> get items => _items;
+
+  void _createDemoItems() {
+    _items.add(Item(
+        uniqueId: "ABC123", id: 1, room: "Living Room", description: "TV"));
+    _items.add(Item(
+        uniqueId: "DEF456", id: 2, room: "Kitchen", description: "Microwave"));
+    _items.add(
+        Item(uniqueId: "GHI789", id: 3, room: "Bedroom", description: "Bed"));
+    _items.add(Item(
+        uniqueId: "JKL012", id: 4, room: "Bathroom", description: "Toilet"));
+    _items.add(
+        Item(uniqueId: "MNO345", id: 5, room: "Garage", description: "Car"));
+    _saveItems();
+    notifyListeners();
+  }
 
   void addItem({String? room, String? description}) {
     final newItem = Item(

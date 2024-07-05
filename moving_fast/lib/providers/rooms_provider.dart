@@ -5,10 +5,26 @@ class RoomsProvider with ChangeNotifier {
   List<String> _rooms = [];
 
   RoomsProvider() {
+    _createDemoRooms();
     _loadRooms();
   }
 
   List<String> get rooms => _rooms;
+
+  Future<void> _createDemoRooms() async {
+    addRoom('Living Room');
+    addRoom('Kitchen');
+    addRoom('Bedroom');
+    addRoom('Bathroom');
+    addRoom('Garage');
+    addRoom('Basement');
+  }
+
+  Future<void> clearRooms() async {
+    _rooms = [];
+    await _saveRooms();
+    notifyListeners();
+  }
 
   Future<void> addRoom(String room) async {
     if (!_rooms.contains(room)) {
