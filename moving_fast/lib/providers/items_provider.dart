@@ -8,14 +8,30 @@ class Item {
   int id;
   String? room;
   String? description;
+  bool isVerified = false;
+  bool isArchived = false;
+  bool isDeleted = false;
+  bool isDelivered = false;
 
-  Item({required this.uniqueId, required this.id, this.room, this.description});
+  Item(
+      {required this.uniqueId,
+      required this.id,
+      this.room,
+      this.description,
+      this.isVerified = false,
+      this.isArchived = false,
+      this.isDeleted = false,
+      this.isDelivered = false});
 
   Map<String, dynamic> toJson() => {
         'uniqueId': uniqueId,
         'id': id,
         'room': room,
         'description': description,
+        'isVerified': isVerified,
+        'isArchived': isArchived,
+        'isDeleted': isDeleted,
+        'isDelivered': isDelivered,
       };
 
   static Item fromJson(Map<String, dynamic> json) => Item(
@@ -23,6 +39,10 @@ class Item {
         id: json['id'],
         room: json['room'],
         description: json['description'],
+        isVerified: json['isVerified'],
+        isArchived: json['isArchived'],
+        isDeleted: json['isDeleted'],
+        isDelivered: json['isDelivered'],
       );
 }
 
@@ -85,11 +105,65 @@ class ItemProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Item? getItemByUniqueId(String uniqueId) {
+    try {
+      return _items.firstWhere((item) => item.uniqueId == uniqueId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Item? getItemById(int id) {
+    try {
+      return _items.firstWhere((item) => item.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+
   void updateItem(String uniqueId, String? room, String? description) {
-    final item = _items.firstWhere((item) => item.uniqueId == uniqueId);
-    item.room = room;
-    item.description = description;
-    _saveItems();
-    notifyListeners();
+    final item = getItemByUniqueId(uniqueId);
+    if (item != null) {
+      item.room = room;
+      item.description = description;
+      _saveItems();
+      notifyListeners();
+    }
+  }
+
+  void setItemVerification(String uniqueId, bool isVerified) {
+    final item = getItemByUniqueId(uniqueId);
+    if (item != null) {
+      item.isVerified = !item.isVerified;
+      _saveItems();
+      notifyListeners();
+    }
+  }
+
+  void setItemArchive(String uniqueId, bool isArchived) {
+    final item = getItemByUniqueId(uniqueId);
+    if (item != null) {
+      item.isArchived = !item.isArchived;
+      _saveItems();
+      notifyListeners();
+    }
+  }
+
+  void setItemDelete(String uniqueId, bool isDeleted) {
+    final item = getItemByUniqueId(uniqueId);
+    if (item != null) {
+      item.isDeleted = !item.isDeleted;
+      _saveItems();
+      notifyListeners();
+    }
+  }
+
+  void setItemDelivered(String uniqueId, bool isDelivered) {
+    final item = getItemByUniqueId(uniqueId);
+    if (item != null) {
+      item.isDelivered = !item.isDelivered;
+      _saveItems();
+      notifyListeners();
+    }
   }
 }

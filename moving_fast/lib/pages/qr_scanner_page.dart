@@ -3,7 +3,10 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import '../providers/items_provider.dart';
 
 class QrScanner extends StatefulWidget {
   const QrScanner({Key? key}) : super(key: key);
@@ -16,6 +19,9 @@ class _QrScannerState extends State<QrScanner> {
   Barcode? result;
   QRViewController? controller;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+  bool isCameraPaused = false;
+  bool isVerifyMode = false;
+  bool isDeliverMode = false;
 
   @override
   void reassemble() {
@@ -24,11 +30,17 @@ class _QrScannerState extends State<QrScanner> {
       controller!.pauseCamera();
     }
     controller!.resumeCamera();
+    setState(() {
+      isCameraPaused = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final itemProvider = Provider.of<ItemProvider>(context, listen: false);
+
     return Scaffold(
+      appBar: AppBar(title: Text('QR Scanner')),
       body: Column(
         children: <Widget>[
           Expanded(flex: 4, child: _buildQrView(context)),
@@ -40,79 +52,82 @@ class _QrScannerState extends State<QrScanner> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: <Widget>[
                   if (result != null)
-                    Text(
-                        'Barcode Type: ${describeEnum(result!.format)}   Data: ${result!.code}')
+                    _buildScanResult(itemProvider)
                   else
                     const Text('Scan a code'),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: <Widget>[
-                      Container(
-                        margin: const EdgeInsets.all(8),
-                        child: ElevatedButton(
-                            onPressed: () async {
-                              await controller?.toggleFlash();
-                              setState(() {});
-                            },
-                            child: FutureBuilder(
-                              future: controller?.getFlashStatus(),
-                              builder: (context, snapshot) {
-                                return Text('Flash: ${snapshot.data}');
-                              },
-                            )),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.all(8),
-                        child: ElevatedButton(
-                            onPressed: () async {
-                              await controller?.flipCamera();
-                              setState(() {});
-                            },
-                            child: FutureBuilder(
-                              future: controller?.getCameraInfo(),
-                              builder: (context, snapshot) {
-                                if (snapshot.data != null) {
-                                  return Text(
-                                      'Camera facing ${describeEnum(snapshot.data!)}');
-                                } else {
-                                  return const Text('loading');
-                                }
-                              },
-                            )),
-                      )
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: <Widget>[
-                      Container(
-                        margin: const EdgeInsets.all(8),
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            await controller?.pauseCamera();
-                          },
-                          child: const Text('pause',
-                              style: TextStyle(fontSize: 20)),
-                        ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.all(8),
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            await controller?.resumeCamera();
-                          },
-                          child: const Text('resume',
-                              style: TextStyle(fontSize: 20)),
-                        ),
-                      )
-                    ],
-                  ),
                 ],
               ),
             ),
           )
+        ],
+      ),
+      floatingActionButton: SpeedDial(
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        animatedIcon: AnimatedIcons.menu_close,
+        children: [
+          SpeedDialChild(
+            child: Icon(Icons.flash_on),
+            label: 'Toggle Flash',
+            onTap: () async {
+              await controller?.toggleFlash();
+              setState(() {});
+            },
+          ),
+          SpeedDialChild(
+            child: Icon(Icons.flip_camera_android),
+            label: 'Rotate Camera',
+            onTap: () async {
+              await controller?.flipCamera();
+              setState(() {});
+            },
+          ),
+          SpeedDialChild(
+            child: Icon(isCameraPaused ? Icons.play_arrow : Icons.pause),
+            label: isCameraPaused ? 'Resume Camera' : 'Pause Camera',
+            onTap: () async {
+              if (isCameraPaused) {
+                await controller?.resumeCamera();
+              } else {
+                await controller?.pauseCamera();
+              }
+              setState(() {
+                isCameraPaused = !isCameraPaused;
+              });
+            },
+          ),
+          if (!isVerifyMode)
+            SpeedDialChild(
+              child: Icon(Icons.verified),
+              label: 'Toggle Verify Mode',
+              onTap: () {
+                setState(() {
+                  isVerifyMode = !isVerifyMode;
+                  isDeliverMode = false;
+                });
+              },
+            ),
+          if (!isDeliverMode)
+            SpeedDialChild(
+              child: Icon(Icons.delivery_dining),
+              label: 'Toggle Deliver Mode',
+              onTap: () {
+                setState(() {
+                  isDeliverMode = !isDeliverMode;
+                  isVerifyMode = false;
+                });
+              },
+            ),
+          SpeedDialChild(
+            child: Icon(Icons.info),
+            label: 'Get Info',
+            onTap: () {
+              setState(() {
+                isDeliverMode = false;
+                isVerifyMode = false;
+              });
+            },
+          ),
         ],
       ),
     );
@@ -141,9 +156,11 @@ class _QrScannerState extends State<QrScanner> {
       this.controller = controller;
     });
     controller.scannedDataStream.listen((scanData) {
-      setState(() {
-        result = scanData;
-      });
+      if (mounted) {
+        setState(() {
+          result = scanData;
+        });
+      }
     });
   }
 
@@ -151,7 +168,7 @@ class _QrScannerState extends State<QrScanner> {
     log('${DateTime.now().toIso8601String()}_onPermissionSet $p');
     if (!p) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('no Permission')),
+        const SnackBar(content: Text('No Permission')),
       );
     }
   }
@@ -160,5 +177,43 @@ class _QrScannerState extends State<QrScanner> {
   void dispose() {
     controller?.dispose();
     super.dispose();
+  }
+
+  Widget _buildScanResult(ItemProvider itemProvider) {
+    final scannedCode = result?.code;
+    final item = itemProvider.getItemByUniqueId(scannedCode!);
+
+    if (item == null) {
+      return Text('Item not found: $scannedCode');
+    }
+
+    if (isVerifyMode && !item.isVerified) {
+      Future.microtask(() {
+        itemProvider.setItemVerification(scannedCode, true);
+      });
+    }
+
+    if (isDeliverMode && !item.isDelivered) {
+      Future.microtask(() {
+        itemProvider.setItemDelivered(scannedCode, true);
+      });
+    }
+
+    return Container(
+      color: Colors.green.withOpacity(0.3),
+      child: Column(
+        children: [
+          Text('Item ID: ${item.id}'),
+          if (item.description != null && item.description!.isNotEmpty)
+            Text('Description: ${item.description}'),
+          if (item.room != null && item.room!.isNotEmpty)
+            Text('Room: ${item.room}'),
+          Text('Verified: ${item.isVerified ? 'Yes' : 'No'}'),
+          Text('Archived: ${item.isArchived ? 'Yes' : 'No'}'),
+          Text('Deleted: ${item.isDeleted ? 'Yes' : 'No'}'),
+          Text('Delivered: ${item.isDelivered ? 'Yes' : 'No'}'),
+        ],
+      ),
+    );
   }
 }

@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import 'providers/items_provider.dart';
 import 'providers/rooms_provider.dart';
 import 'widgets/main_screen_speed_dial.dart';
-import 'pages/qr_code_page.dart';
-import 'dialogs/edit_item_dialog.dart';
 import 'widgets/rooms_list_view.dart';
 
 void main() {

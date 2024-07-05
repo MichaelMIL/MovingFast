@@ -16,6 +16,25 @@ class RoomsListView extends StatelessWidget {
     required this.itemProvider,
   });
 
+  Color _getTileColor(Item item) {
+    Color tileColor = Colors.orange;
+    if (!item.isVerified) {
+      tileColor = Colors.red.withOpacity(0.3);
+    } else {
+      tileColor = Colors.yellow.withOpacity(0.3);
+    }
+    if (item.isArchived) {
+      tileColor = Colors.grey.withOpacity(0.3);
+    }
+    if (item.isDeleted) {
+      tileColor = Colors.red.withOpacity(0.8);
+    }
+    if (item.isDelivered) {
+      tileColor = Colors.green.withOpacity(0.3);
+    }
+    return tileColor;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -57,6 +76,7 @@ class RoomsListView extends StatelessWidget {
                     Text('Room: ${item.room}'),
                 ],
               ),
+              tileColor: _getTileColor(item),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -89,6 +109,13 @@ class RoomsListView extends StatelessWidget {
                           context: context,
                           builder: (context) => EditItemDialog(item: item),
                         );
+                      },
+                    ),
+                  if (item.isVerified)
+                    IconButton(
+                      icon: Icon(Icons.check),
+                      onPressed: () {
+                        itemProvider.setItemVerification(item.uniqueId, false);
                       },
                     ),
                 ],
