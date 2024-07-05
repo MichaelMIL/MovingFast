@@ -17,22 +17,68 @@ class RoomsListView extends StatelessWidget {
   });
 
   Color _getTileColor(Item item) {
-    Color tileColor = Colors.orange;
-    if (!item.isVerified) {
-      tileColor = Colors.red.withOpacity(0.3);
-    } else {
-      tileColor = Colors.yellow.withOpacity(0.3);
+    if (item.isDeleted) {
+      return Colors.red.withOpacity(0.8);
     }
     if (item.isArchived) {
-      tileColor = Colors.grey.withOpacity(0.3);
+      return Colors.grey.withOpacity(0.3);
     }
-    if (item.isDeleted) {
-      tileColor = Colors.red.withOpacity(0.8);
+    if (!item.isVerified) {
+      return Colors.red.withOpacity(0.3);
     }
     if (item.isDelivered) {
-      tileColor = Colors.green.withOpacity(0.3);
+      return Colors.green.withOpacity(0.3);
     }
-    return tileColor;
+    return Colors.yellow.withOpacity(0.3);
+  }
+
+  Widget _buildStatusBubble(Item item) {
+    String statusText = "Unknown";
+    Color bubbleColor = Colors.grey;
+
+    if (item.isDeleted) {
+      statusText = "Deleted";
+      bubbleColor = Colors.red[900]!;
+    } else if (item.isArchived) {
+      statusText = "Archived";
+      bubbleColor = Colors.grey;
+    } else if (!item.isVerified && !item.isDelivered) {
+      statusText = "Not Verified, Not Delivered";
+      bubbleColor = Colors.red;
+    } else if (item.isVerified && !item.isDelivered) {
+      statusText = "Verified, Not Delivered";
+      bubbleColor = Colors.yellow;
+    } else if (item.isDelivered) {
+      statusText = "Delivered";
+      bubbleColor = Colors.green;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bubbleColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        statusText,
+        style: TextStyle(color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildStatusCountBubble(int count, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      margin: EdgeInsets.only(left: 4),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '$count',
+        style: TextStyle(color: Colors.white),
+      ),
+    );
   }
 
   @override
@@ -44,22 +90,59 @@ class RoomsListView extends StatelessWidget {
         List<Item> roomItems;
 
         if (room == 'Unknown') {
-          // Filter items that do not have a room matching any room in roomsProvider
           roomItems = itemProvider.items
               .where((item) => !roomsProvider.rooms.contains(item.room))
               .toList();
         } else {
-          // Filter items by the current room
           roomItems =
               itemProvider.items.where((item) => item.room == room).toList();
         }
+
+        final int notVerifiedNotDeliveredCount = roomItems
+            .where((item) =>
+                !item.isVerified &&
+                !item.isDelivered &&
+                !item.isArchived &&
+                !item.isDeleted)
+            .length;
+        final int verifiedNotDeliveredCount = roomItems
+            .where((item) =>
+                item.isVerified &&
+                !item.isDelivered &&
+                !item.isArchived &&
+                !item.isDeleted)
+            .length;
+        final int deliveredCount = roomItems
+            .where((item) =>
+                item.isDelivered && !item.isArchived && !item.isDeleted)
+            .length;
+        final int archivedCount = roomItems
+            .where((item) => item.isArchived && !item.isDeleted)
+            .length;
+        final int deletedCount =
+            roomItems.where((item) => item.isDeleted).length;
 
         return ExpansionTile(
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(room),
-              Text('${roomItems.length} items'),
+              Row(
+                children: [
+                  if (notVerifiedNotDeliveredCount > 0)
+                    _buildStatusCountBubble(
+                        notVerifiedNotDeliveredCount, Colors.red),
+                  if (verifiedNotDeliveredCount > 0)
+                    _buildStatusCountBubble(
+                        verifiedNotDeliveredCount, Colors.yellow),
+                  if (deliveredCount > 0)
+                    _buildStatusCountBubble(deliveredCount, Colors.green),
+                  if (archivedCount > 0)
+                    _buildStatusCountBubble(archivedCount, Colors.grey),
+                  if (deletedCount > 0)
+                    _buildStatusCountBubble(deletedCount, Colors.red[900]!),
+                ],
+              ),
             ],
           ),
           children: roomItems.map((item) {
@@ -80,6 +163,7 @@ class RoomsListView extends StatelessWidget {
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  _buildStatusBubble(item),
                   IconButton(
                     icon: Icon(Icons.qr_code),
                     onPressed: () {
@@ -111,11 +195,26 @@ class RoomsListView extends StatelessWidget {
                         );
                       },
                     ),
-                  if (item.isVerified)
+                  if (item.isVerified ||
+                      item.isDelivered ||
+                      item.isArchived ||
+                      item.isDeleted)
                     IconButton(
-                      icon: Icon(Icons.check),
+                      icon: Icon(Icons.refresh),
                       onPressed: () {
-                        itemProvider.setItemVerification(item.uniqueId, false);
+                        if (item.isVerified) {
+                          itemProvider.setItemVerification(
+                              item.uniqueId, false);
+                        }
+                        if (item.isDelivered) {
+                          itemProvider.setItemDelivered(item.uniqueId, false);
+                        }
+                        if (item.isArchived) {
+                          itemProvider.setItemArchive(item.uniqueId, false);
+                        }
+                        if (item.isDeleted) {
+                          itemProvider.setItemDelete(item.uniqueId, false);
+                        }
                       },
                     ),
                 ],

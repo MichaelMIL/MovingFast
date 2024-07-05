@@ -69,6 +69,69 @@ class ItemProvider with ChangeNotifier {
         uniqueId: "JKL012", id: 4, room: "Bathroom", description: "Toilet"));
     _items.add(
         Item(uniqueId: "MNO345", id: 5, room: "Garage", description: "Car"));
+    _items.add(Item(
+        uniqueId: "PQR678",
+        id: 6,
+        room: "Office",
+        description: "Computer",
+        isVerified: true));
+    _items.add(Item(
+        uniqueId: "STU901",
+        id: 7,
+        room: "Basement",
+        description: "Washer",
+        isVerified: true,
+        isDelivered: true));
+    _items.add(Item(
+        uniqueId: "VWX234",
+        id: 8,
+        room: "Attic",
+        description: "Boxes",
+        isVerified: true,
+        isArchived: true));
+    _items.add(Item(
+        uniqueId: "YZA567",
+        id: 9,
+        room: "Pantry",
+        description: "Food",
+        isVerified: true,
+        isDeleted: true));
+    _items.add(Item(
+        uniqueId: "BCD890",
+        id: 10,
+        room: "Laundry Room",
+        description: "Dryer",
+        isVerified: true,
+        isDelivered: true,
+        isArchived: true));
+    // add 100 random items for testing
+    // create list of rooms
+
+    List<String> rooms = [
+      "Living Room",
+      "Kitchen",
+      "Bedroom",
+      "Bathroom",
+      "Garage",
+      "Office",
+      "Basement",
+      "Attic",
+      "Pantry",
+      "Laundry Room",
+    ];
+
+    for (int i = 0; i < 100; i++) {
+      _items.add(Item(
+          uniqueId: _uuid.v4(),
+          id: _nextId++,
+          room: rooms[i % rooms.length],
+          description: "Item $i",
+          isVerified: (i % 2 == 0),
+          isArchived: (i % 23 == 0),
+          isDeleted: (i % 13 == 0),
+          isDelivered: (i % 5 == 0)));
+    }
+
     _saveItems();
     notifyListeners();
   }
