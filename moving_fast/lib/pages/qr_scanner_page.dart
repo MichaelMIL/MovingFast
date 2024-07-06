@@ -36,6 +36,16 @@ class _QrScannerState extends State<QrScanner> {
     return qrFrameColor;
   }
 
+  IconData _getModeIcon() {
+    if (isVerifyMode) {
+      return Icons.verified;
+    }
+    if (isDeliverMode) {
+      return Icons.delivery_dining;
+    }
+    return Icons.info;
+  }
+
   @override
   void reassemble() {
     super.reassemble();
@@ -53,7 +63,15 @@ class _QrScannerState extends State<QrScanner> {
     // final itemProvider = Provider.of<ItemProvider>(context, listen: false);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('QR Scanner')),
+      appBar: AppBar(
+        title: const Text('QR Scanner'),
+        actions: [
+          IconButton(
+            icon: Icon(_getModeIcon(), color: _setQrFrameColor()),
+            onPressed: () {},
+          ),
+        ],
+      ),
       body: Column(
         children: <Widget>[
           Expanded(flex: 4, child: _buildQrView(context)),

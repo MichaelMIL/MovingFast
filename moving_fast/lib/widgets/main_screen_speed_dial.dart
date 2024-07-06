@@ -7,10 +7,22 @@ import '../providers/items_provider.dart';
 import '../dialogs/add_room_dialog.dart';
 import '../providers/rooms_provider.dart';
 import '../dialogs/delete_room_dialog.dart';
+import '../providers/settings_provider.dart';
 
-class MainScreenSpeedDial extends StatelessWidget {
+class MainScreenSpeedDial extends StatefulWidget {
+  const MainScreenSpeedDial({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  _MainScreenSpeedDialState createState() => _MainScreenSpeedDialState();
+}
+
+class _MainScreenSpeedDialState extends State<MainScreenSpeedDial> {
   @override
   Widget build(BuildContext context) {
+    bool _showDeletedArchived =
+        Provider.of<SettingsProvider>(context).showDeletedArchived;
     return SpeedDial(
       icon: Icons.menu,
       activeIcon: Icons.close,
@@ -45,6 +57,19 @@ class MainScreenSpeedDial extends StatelessWidget {
                 builder: (context) => QrScanner(),
               ),
             );
+          },
+        ),
+        SpeedDialChild(
+          child: Icon(Icons.filter_alt_outlined),
+          label: _showDeletedArchived
+              ? 'Hide Deleted/Archived'
+              : 'Show Deleted/Archived',
+          onTap: () {
+            setState(() {
+              _showDeletedArchived = !_showDeletedArchived;
+              Provider.of<SettingsProvider>(context, listen: false)
+                  .setShowDeletedArchived(_showDeletedArchived);
+            });
           },
         ),
         SpeedDialChild(

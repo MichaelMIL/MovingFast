@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -124,12 +126,14 @@ class ItemProvider with ChangeNotifier {
       _items.add(Item(
           uniqueId: _uuid.v4(),
           id: _nextId++,
-          room: rooms[i % rooms.length],
-          description: "Item $i",
-          isVerified: (i % 2 == 0),
-          isArchived: (i % 23 == 0),
-          isDeleted: (i % 13 == 0),
-          isDelivered: (i % 5 == 0)));
+          room: rooms[Random().nextInt(rooms.length)],
+          // create a random description with a random length
+          description: List.generate(Random().nextInt(463) + 50,
+              (i) => String.fromCharCode(65 + Random().nextInt(26))).join(),
+          isVerified: Random().nextBool(),
+          isArchived: Random().nextInt(23) == 0,
+          isDeleted: Random().nextInt(13) == 0,
+          isDelivered: Random().nextInt(5) == 0));
     }
 
     _saveItems();
